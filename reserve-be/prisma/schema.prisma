@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 관계 설정
+  reservations Reservation[] // 사용자의 예약 목록
+}
+
+// 예약 가능한 시간대 모델
+model TimeSlot {
+  id        Int      @id @default(autoincrement())
+  startTime DateTime
+  endTime   DateTime
+  capacity  Int      @default(1) // 해당 시간대의 수용 가능 인원
+  isActive  Boolean  @default(true)
+  
+  // 관계 설정
+  reservations Reservation[]
+}
+
+// 예약 모델
+model Reservation {
+  id          Int      @id @default(autoincrement())
+  status      ReservationStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 예약 상세 정보
+  personCount Int      @default(1) // 예약 인원 수
+  note       String?   // 특이사항 또는 요청사항
+  
+  // 관계 설정
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  timeSlotId Int
+  timeSlot   TimeSlot @relation(fields: [timeSlotId], references: [id])
+
+  @@index([userId])
+  @@index([timeSlotId])
+}
+
+// 예약 상태 enum
+enum ReservationStatus {
+  PENDING   // 대기중
+  CONFIRMED // 확정됨
+  CANCELLED // 취소됨
+  COMPLETED // 완료됨
+}
